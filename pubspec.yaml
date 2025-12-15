@@ -1,0 +1,58 @@
+name: e_shop
+description: "A new Flutter Delivery App project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  provider: ^6.1.5+1
+  shared_preferences: ^2.5.3
+
+  # Firebase (compatible versions)
+  firebase_core: ^2.32.0
+  firebase_auth: ^4.20.0
+  cloud_firestore: ^4.10.5
+  firebase_storage: ^11.6.8
+
+  # UI & helpers
+  badges: ^3.0.2
+  intl: ^0.18.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/spice.jpeg
+    - assets/images/mama-kitchen.jpeg
+    - assets/images/pizza.jpeg
+    - assets/images/burger.webp
+    - assets/images/sushi.jpg
+    - assets/images/supermarket.jpeg
+    - assets/images/Liver-Onions-2.jpg
+    - assets/images/meat.jpeg
+    - assets/images/Somali-Rice-1.jpg
+    - assets/images/pasta.jpeg  
+    - assets/images/sambus.jpeg
+    - assets/images/Anjera.jpg
+    - assets/images/mixed food.jpeg
+    - assets/images/italian food.jpeg
+    - assets/images/shuwarma.jpg
+    
+
+
+
+
+
+    
+
