@@ -1,3 +1,8 @@
+
+
+
+
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/cart_provider.dart';
@@ -22,30 +27,43 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   bool _isLoading = false;
-  String _statusMessage = "Waiting for payment...";
+  String _statusMessage = "";
 
   @override
   void initState() {
     super.initState();
-    if (!widget.useCard) {
-      _startMpesaPayment();
+    if (widget.useCard) {
+      _simulateCardPayment();
     } else {
-      // Simulate card payment
-      Future.delayed(const Duration(seconds: 2), () {
-        setState(() => _statusMessage = "Card payment completed!");
-        _clearCartAndShowConfirmation();
-      });
+      _startMpesaPayment();
     }
   }
 
+  // Simulated card payment
+  void _simulateCardPayment() async {
+    setState(() {
+      _isLoading = true;
+      _statusMessage = "Processing card payment...";
+    });
+
+    await Future.delayed(const Duration(seconds: 2));
+    setState(() => _isLoading = false);
+    _showConfirmationDialog("Card payment completed!");
+    _clearCart();
+  }
+
+  // M-Pesa STK Push payment
   Future<void> _startMpesaPayment() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _statusMessage = "Sending M-Pesa payment request...";
+    });
 
     try {
       final cart = Provider.of<CartProvider>(context, listen: false);
       final amount = cart.totalPrice;
 
-      // Replace with your local backend URL
+      // Replace with your backend URL
       final url = Uri.parse("http://192.168.0.105:3000/mpesa/payment");
 
       final response = await http.post(
@@ -62,7 +80,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
       if (response.statusCode == 200 && data['status'] == 'success') {
         setState(() => _statusMessage = "Payment request sent! Check your phone for STK push.");
-        _clearCartAndShowConfirmation();
+        _showConfirmationDialog("Payment request sent! Check your phone for STK push.");
+        _clearCart();
       } else {
         setState(() => _statusMessage = "Payment failed: ${data['message']}");
       }
@@ -73,15 +92,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
-  void _clearCartAndShowConfirmation() {
+  // Clear cart
+  void _clearCart() {
     final cart = Provider.of<CartProvider>(context, listen: false);
     cart.clearCart();
+  }
 
+  // Show confirmation dialog
+  void _showConfirmationDialog(String message) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Order Placed'),
-        content: const Text('Your order has been placed successfully.'),
+        title: const Text('Order Status'),
+        content: Text(message),
         actions: [
           TextButton(
             onPressed: () {
@@ -102,7 +125,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         child: _isLoading
             ? const CircularProgressIndicator()
             : Text(
-                _statusMessage,
+                _statusMessage.isEmpty ? "Waiting for payment..." : _statusMessage,
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
