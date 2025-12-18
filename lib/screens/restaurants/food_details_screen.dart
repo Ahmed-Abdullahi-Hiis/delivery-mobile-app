@@ -1,4 +1,4 @@
- import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../models/food_model.dart';
 import '../../providers/cart_provider.dart';
 import 'package:provider/provider.dart';
@@ -15,7 +15,12 @@ class FoodDetailsScreen extends StatelessWidget {
       appBar: AppBar(title: Text(food.name)),
       body: Column(
         children: [
-          Image.network(food.image, width: double.infinity, height: 220, fit: BoxFit.cover),
+          Image.asset( // Use Image.asset since your images are local assets
+            food.image,
+            width: double.infinity,
+            height: 220,
+            fit: BoxFit.cover,
+          ),
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.all(16),
@@ -30,8 +35,13 @@ class FoodDetailsScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: () {
-                    cart.addToCart(food);
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Added to cart')));
+                    cart.addItem(food); // ✅ corrected method
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${food.name} added to cart'),
+                        duration: const Duration(seconds: 1),
+                      ),
+                    );
                   },
                   child: const Text('Add to Cart'),
                 ),
