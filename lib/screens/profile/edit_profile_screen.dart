@@ -1,4 +1,6 @@
- import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/MyAuthProvider.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -8,8 +10,23 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  final _name = TextEditingController(text: 'Ahmed');
-  final _email = TextEditingController(text: 'ahmed@example.com');
+  late TextEditingController _name;
+  late TextEditingController _email;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = context.read<MyAuthProvider>().user;
+    _name = TextEditingController(text: user?.displayName ?? '');
+    _email = TextEditingController(text: user?.email ?? '');
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _email.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,8 +42,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
-                // save -- wire to provider/backend
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated')));
+                context.read<MyAuthProvider>().updateProfile(
+                      name: _name.text.trim(),
+                      email: _email.text.trim(),
+                    );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Profile updated')),
+                );
                 Navigator.pop(context);
               },
               child: const Text('Save'),
