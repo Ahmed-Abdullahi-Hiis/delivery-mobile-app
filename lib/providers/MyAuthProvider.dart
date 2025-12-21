@@ -1,127 +1,114 @@
-
-// import 'package:flutter/material.dart';
-// import 'package:firebase_auth/firebase_auth.dart';
-
-// class MyAuthProvider extends ChangeNotifier {
-//   final FirebaseAuth _auth = FirebaseAuth.instance;
-
-//   User? get user => _auth.currentUser;
-
-//   // Update profile info (name + email)
-//   Future<void> updateProfile({String? name, String? email}) async {
-//     if (user == null) return;
-
-//     try {
-//       // Update display name
-//       if (name != null && name.isNotEmpty) {
-//         await user!.updateDisplayName(name);
-//       }
-
-//       // Update email
-//       if (email != null && email.isNotEmpty && email != user!.email) {
-//         try {
-//           await user!.updateEmail(email);
-//         } on FirebaseAuthException catch (e) {
-//           if (e.code == 'requires-recent-login') {
-//             // The user needs to re-login
-//             throw Exception(
-//                 'Please re-login and try again to update your email.');
-//           } else {
-//             throw Exception('Failed to update email: ${e.message}');
-//           }
-//         }
-//       }
-
-//       // Reload user data to reflect changes
-//       await user!.reload();
-//       notifyListeners();
-//     } catch (e) {
-//       throw Exception('Failed to update profile: $e');
-//     }
-//   }
-
-//   // Logout
-//   Future<void> logout() async {
-//     await _auth.signOut();
-//     notifyListeners();
-//   }
-// }
-
-
-
-
-
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MyAuthProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  User? get user => _auth.currentUser;
+  User? _user;
+  String _role = 'user';
+  bool _loading = true;
 
-  String role = 'user';
-  bool get isAdmin => role == 'admin';
+  User? get user => _user;
+  String get role => _role;
+  bool get isAdmin => _role == 'admin';
+  bool get isLoading => _loading;
 
-  /// 🔐 Load role from Firestore (SAFE for old users)
-  Future<void> loadUserRole() async {
-    if (user == null) return;
+  MyAuthProvider() {
+    // Listen to auth state changes
+    _auth.authStateChanges().listen(_onAuthChanged);
+  }
 
-    final ref = FirebaseFirestore.instance
-        .collection('users')
-        .doc(user!.uid);
+  /// 🔁 Handle login/logout and Firestore role loading
+  Future<void> _onAuthChanged(User? firebaseUser) async {
+    _user = firebaseUser;
+    _loading = true;
+    notifyListeners();
 
-    final doc = await ref.get();
-
-    // ✅ FIX: auto-create user doc if missing
-    if (!doc.exists) {
-      await ref.set({
-        'email': user!.email,
-        'role': 'user',
-      });
-      role = 'user';
-    } else {
-      role = doc.data()?['role'] ?? 'user';
+    if (firebaseUser == null) {
+      _role = 'user';
+      _loading = false;
+      notifyListeners();
+      return;
     }
 
+    final ref = _db.collection('users').doc(firebaseUser.uid);
+    final doc = await ref.get();
+
+    // Create user doc if it doesn't exist
+    if (!doc.exists) {
+      await ref.set({
+        'name': firebaseUser.displayName ?? '',
+        'email': firebaseUser.email ?? '',
+        'role': 'user',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      _role = 'user';
+    } else {
+      _role = doc.data()?['role'] ?? 'user';
+    }
+
+    _loading = false;
     notifyListeners();
   }
 
   /// 👤 Update profile info (name + email)
   Future<void> updateProfile({String? name, String? email}) async {
-    if (user == null) return;
+    if (_user == null) return;
 
     try {
       if (name != null && name.isNotEmpty) {
-        await user!.updateDisplayName(name);
+        await _user!.updateDisplayName(name);
+        await _db.collection('users').doc(_user!.uid).update({
+          'name': name,
+        });
       }
 
-      if (email != null && email.isNotEmpty && email != user!.email) {
+      if (email != null && email.isNotEmpty && email != _user!.email) {
         try {
-          await user!.updateEmail(email);
+          await _user!.updateEmail(email);
+          await _db.collection('users').doc(_user!.uid).update({
+            'email': email,
+          });
         } on FirebaseAuthException catch (e) {
           if (e.code == 'requires-recent-login') {
             throw Exception(
-              'Please re-login and try again to update your email.',
-            );
+                'Please re-login and try again to update your email.');
           } else {
             throw Exception('Failed to update email: ${e.message}');
           }
         }
       }
 
-      await user!.reload();
+      await _user!.reload();
+      _user = _auth.currentUser;
       notifyListeners();
     } catch (e) {
       throw Exception('Failed to update profile: $e');
     }
   }
 
+  /// 🔐 Manually reload role from Firestore (optional)
+  Future<void> loadUserRole() async {
+    if (_user == null) return;
+
+    _loading = true;
+    notifyListeners();
+
+    final ref = _db.collection('users').doc(_user!.uid);
+    final doc = await ref.get();
+
+    _role = doc.data()?['role'] ?? 'user';
+    _loading = false;
+    notifyListeners();
+  }
+
   /// 🚪 Logout
   Future<void> logout() async {
     await _auth.signOut();
-    role = 'user'; // reset role
+    _user = null;
+    _role = 'user';
     notifyListeners();
   }
 }
