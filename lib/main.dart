@@ -1,6 +1,8 @@
 
 
 
+import 'package:e_shop/utils/add_test_orders.dart';
+
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -74,12 +76,15 @@ class MyApp extends StatelessWidget {
               ForgotPasswordScreen.route: (_) =>
                   const ForgotPasswordScreen(),
                   AdminDashboard.route: (_) => const AdminDashboard(),
+                  // OrderHistoryScreen.route: (_) => const OrderHistoryScreen(),
 
+             OrderHistoryScreen.route: (_) => const OrderHistoryScreen(),
 
               RootScreen.route: (_) => const RootScreen(),
               CartScreen.route: (_) => const CartScreen(),
-              OrderHistoryScreen.route: (_) =>
-                  const OrderHistoryScreen(),
+             '/add-test-orders': (_) => const AddTestOrdersScreen(),
+
+
             },
           );
         },

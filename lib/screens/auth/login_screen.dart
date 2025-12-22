@@ -4,7 +4,6 @@
 
 
 
-
 // import 'package:flutter/material.dart';
 // import 'package:provider/provider.dart';
 
@@ -13,9 +12,8 @@
 
 // import '../auth/register_screen.dart';
 // import '../auth/forgot_password.dart';
-
-// // import '../../root_screens/root_screen.dart';
-// // import '../../admin/admin_dashboard.dart';
+// import '../../root_screens/root_screen.dart';
+// import '../../admin/admin_dashboard.dart';
 
 // class LoginScreen extends StatefulWidget {
 //   static const route = "/login";
@@ -37,47 +35,46 @@
 //     super.dispose();
 //   }
 
-// Future<void> _login() async {
-//   if (_email.text.isEmpty || _pass.text.isEmpty) {
-//     ScaffoldMessenger.of(context).showSnackBar(
-//       const SnackBar(content: Text('All fields are required')),
-//     );
-//     return;
-//   }
+//   Future<void> _login() async {
+//     if (_email.text.isEmpty || _pass.text.isEmpty) {
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         const SnackBar(content: Text('All fields are required')),
+//       );
+//       return;
+//     }
 
-//   setState(() => _loading = true);
+//     setState(() => _loading = true);
 
-//   try {
-//     // 🔐 Firebase login only
-//     await AuthService().login(
-//       _email.text.trim(),
-//       _pass.text.trim(),
-//     );
+//     try {
+//       // 1️⃣ Firebase login
+//       await AuthService().login(_email.text.trim(), _pass.text.trim());
 
-//     if (!mounted) return;
+//       // 2️⃣ Load user role from Firestore
+//       final auth = context.read<MyAuthProvider>();
+//       await auth.loadUserRole();
 
-//     // ✅ Let RootScreen decide admin / user
-//     Navigator.pushReplacementNamed(context, '/root');
+//       if (!mounted) return;
 
-//   } catch (e) {
-//     ScaffoldMessenger.of(context).showSnackBar(
-//       const SnackBar(content: Text('Invalid email or password')),
-//     );
-//   } finally {
-//     if (mounted) {
-//       setState(() => _loading = false);
+//       // 3️⃣ Redirect based on role
+//       if (auth.isAdmin) {
+//         Navigator.pushReplacement(
+//           context,
+//           MaterialPageRoute(builder: (_) => const AdminDashboard()),
+//         );
+//       } else {
+//         Navigator.pushReplacement(
+//           context,
+//           MaterialPageRoute(builder: (_) => const RootScreen()),
+//         );
+//       }
+//     } catch (e) {
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         SnackBar(content: Text('Login failed: $e')),
+//       );
+//     } finally {
+//       if (mounted) setState(() => _loading = false);
 //     }
 //   }
-// }
-
-
-
-
-
-
-
-
- 
 
 //   @override
 //   Widget build(BuildContext context) {
@@ -90,6 +87,7 @@
 //             children: [
 //               const SizedBox(height: 32),
 
+//               // Email
 //               TextField(
 //                 controller: _email,
 //                 keyboardType: TextInputType.emailAddress,
@@ -106,6 +104,7 @@
 
 //               const SizedBox(height: 16),
 
+//               // Password
 //               TextField(
 //                 controller: _pass,
 //                 obscureText: true,
@@ -122,6 +121,7 @@
 
 //               const SizedBox(height: 24),
 
+//               // Login button
 //               _loading
 //                   ? const CircularProgressIndicator()
 //                   : SizedBox(
@@ -143,18 +143,18 @@
 
 //               const SizedBox(height: 16),
 
+//               // Forgot password
 //               TextButton(
 //                 onPressed: () =>
 //                     Navigator.pushNamed(context, ForgotPasswordScreen.route),
 //                 child: const Text('Forgot password?'),
 //               ),
 
+//               // Register
 //               TextButton(
 //                 onPressed: () => Navigator.push(
 //                   context,
-//                   MaterialPageRoute(
-//                     builder: (_) => const RegisterScreen(),
-//                   ),
+//                   MaterialPageRoute(builder: (_) => const RegisterScreen()),
 //                 ),
 //                 child: const Text('Create an account'),
 //               ),
@@ -172,16 +172,22 @@
 
 
 
+
+
+
+
+
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/auth_service.dart';
 import '../../providers/MyAuthProvider.dart';
-
 import '../auth/register_screen.dart';
 import '../auth/forgot_password.dart';
 import '../../root_screens/root_screen.dart';
 import '../../admin/admin_dashboard.dart';
+import '../home/home_screen.dart'; // Make sure this import is correct
 
 class LoginScreen extends StatefulWidget {
   static const route = "/login";
@@ -214,25 +220,22 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = true);
 
     try {
-      // 1️⃣ Firebase login
       await AuthService().login(_email.text.trim(), _pass.text.trim());
 
-      // 2️⃣ Load user role from Firestore
       final auth = context.read<MyAuthProvider>();
       await auth.loadUserRole();
 
       if (!mounted) return;
 
-      // 3️⃣ Redirect based on role
       if (auth.isAdmin) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const AdminDashboard()),
+          MaterialPageRoute(builder: (_) => AdminDashboard()),
         );
       } else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const RootScreen()),
+          MaterialPageRoute(builder: (_) => RootScreen()),
         );
       }
     } catch (e) {
@@ -269,7 +272,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   fillColor: Colors.grey[200],
                 ),
               ),
-
               const SizedBox(height: 16),
 
               // Password
@@ -286,7 +288,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   fillColor: Colors.grey[200],
                 ),
               ),
-
               const SizedBox(height: 24),
 
               // Login button
@@ -308,7 +309,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
-
               const SizedBox(height: 16),
 
               // Forgot password
@@ -325,6 +325,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   MaterialPageRoute(builder: (_) => const RegisterScreen()),
                 ),
                 child: const Text('Create an account'),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Continue as Guest
+              TextButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const HomeScreen()),
+                  );
+                },
+                child: const Text(
+                  'Continue as Guest',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
