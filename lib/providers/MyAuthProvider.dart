@@ -14,6 +14,7 @@ class MyAuthProvider extends ChangeNotifier {
   String get role => _role;
   bool get isAdmin => _role == 'admin';
   bool get isLoading => _loading;
+  bool get isLoggedIn => _user != null; // ✅ Add this
 
   MyAuthProvider() {
     // Listen to auth state changes
