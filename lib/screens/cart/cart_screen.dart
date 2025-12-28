@@ -77,9 +77,16 @@ class CartScreen extends StatelessWidget {
                       ),
                       ElevatedButton(
                         onPressed: () {
+                          // Pass product details to CheckoutScreen
+                          final productNames = items.map((e) => e.food.name).toList();
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const CheckoutScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => CheckoutScreen(
+                                totalAmount: cart.totalPrice,
+                                productNames: productNames,
+                              ),
+                            ),
                           );
                         },
                         child: const Text('Checkout'),

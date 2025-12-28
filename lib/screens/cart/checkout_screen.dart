@@ -1,30 +1,34 @@
-
-
 import 'package:flutter/material.dart';
 import 'payment_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
-  const CheckoutScreen({super.key});
+  final double totalAmount;
+  final List<String> productNames;
+
+  const CheckoutScreen({
+    super.key,
+    required this.totalAmount,
+    required this.productNames,
+  });
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
-  final _addressCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
-  bool _useCard = false;
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
 
   @override
   void dispose() {
-    _addressCtrl.dispose();
-    _phoneCtrl.dispose();
+    _addressController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
-  void _continue() {
-    final address = _addressCtrl.text.trim();
-    final phone = _phoneCtrl.text.trim();
+  void _proceedToPayment() {
+    final address = _addressController.text.trim();
+    final phone = _phoneController.text.replaceAll(RegExp(r'\D'), '');
 
     if (address.isEmpty || phone.isEmpty) {
       _showError('Please fill all fields');
@@ -32,7 +36,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
 
     if (!RegExp(r'^254\d{9}$').hasMatch(phone)) {
-      _showError('Phone must start with 254');
+      _showError('Phone must start with 254 and have 12 digits');
       return;
     }
 
@@ -40,17 +44,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => PaymentScreen(
-          useCard: _useCard,
           address: address,
           phone: phone,
+          totalAmount: widget.totalAmount,
+          productNames: widget.productNames,
         ),
       ),
     );
   }
 
-  void _showError(String msg) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(msg)));
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   @override
@@ -62,31 +72,32 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         child: Column(
           children: [
             TextField(
-              controller: _addressCtrl,
-              decoration:
-                  const InputDecoration(labelText: 'Address'),
+              controller: _addressController,
+              decoration: const InputDecoration(
+                labelText: 'Address',
+                border: OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
-              controller: _phoneCtrl,
+              controller: _phoneController,
               keyboardType: TextInputType.phone,
-              decoration:
-                  const InputDecoration(labelText: 'Phone'),
-            ),
-            const SizedBox(height: 12),
-            SwitchListTile(
-              title: const Text('Pay with card'),
-              subtitle:
-                  const Text('Turn off to use M-Pesa'),
-              value: _useCard,
-              onChanged: (v) => setState(() => _useCard = v),
+              decoration: const InputDecoration(
+                labelText: 'Phone',
+                hintText: 'e.g. 254712345678',
+                border: OutlineInputBorder(),
+              ),
             ),
             const Spacer(),
             SizedBox(
               width: double.infinity,
+              height: 50,
               child: ElevatedButton(
-                onPressed: _continue,
-                child: const Text('Proceed to Payment'),
+                onPressed: _proceedToPayment,
+                child: const Text(
+                  'Proceed to Payment',
+                  style: TextStyle(fontSize: 18),
+                ),
               ),
             ),
           ],
