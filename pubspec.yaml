@@ -13,13 +13,14 @@ dependencies:
   cupertino_icons: ^1.0.8
   provider: ^6.1.5+1
   shared_preferences: ^2.5.3
-  # url_launcher: ^6.2.5
+  cloud_firestore: ^4.10.5
+  fl_chart: ^1.1.1
+  pdf: ^3.10.0
+  printing: ^5.10.0
 
-
-  # Firebase (compatible versions)
+  # Firebase
   firebase_core: ^2.32.0
   firebase_auth: ^4.20.0
-  cloud_firestore: ^4.10.5
   firebase_storage: ^11.6.8
 
   # UI & helpers
@@ -33,6 +34,8 @@ dependencies:
   stack_trace: ^1.12.1
   url_launcher: ^6.3.2
   web: ^0.5.1
+
+
 
 dev_dependencies:
   flutter_test:
