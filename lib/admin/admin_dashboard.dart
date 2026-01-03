@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../providers/MyAuthProvider.dart';
 import 'admin_manage_users.dart';
 import 'admin_orders.dart';
 import 'admin_reports.dart';
 import 'admin_settings.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AdminDashboard extends StatefulWidget {
   static const route = "/admin-dashboard";
@@ -18,7 +19,6 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   int selectedIndex = 0;
 
-  // Firestore references
   final usersRef = FirebaseFirestore.instance.collection('users');
   final ordersRef = FirebaseFirestore.instance.collection('orders');
 
@@ -26,7 +26,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget build(BuildContext context) {
     final auth = context.watch<MyAuthProvider>();
 
-    // Loading / protection
     if (auth.isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -37,21 +36,25 @@ class _AdminDashboardState extends State<AdminDashboard> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.pushReplacementNamed(context, '/login');
       });
-
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold();
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: const Color(0xFFF4F6F8),
       body: Row(
         children: [
           _buildSidebar(auth),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: _getPage(),
+            child: Column(
+              children: [
+                _buildTopBar(),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: _getPage(),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -59,41 +62,36 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // ---------------- Sidebar ----------------
+  // ================= SIDEBAR =================
   Widget _buildSidebar(MyAuthProvider auth) {
     return Container(
-      width: 220,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade900,
-        boxShadow: const [
-          BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(2, 0))
-        ],
-      ),
+      width: 240,
+      color: const Color(0xFF1F2937),
       child: Column(
         children: [
-          const SizedBox(height: 50),
+          const SizedBox(height: 40),
           const Text(
-            "Admin Panel",
+            "ADMIN PANEL",
             style: TextStyle(
               color: Colors.white,
-              fontSize: 22,
+              fontSize: 20,
+              letterSpacing: 1.2,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 40),
+
           _menuItem(0, "Dashboard", Icons.dashboard),
           _menuItem(1, "Manage Users", Icons.people),
-          _menuItem(2, "Orders", Icons.shopping_cart),
+          _menuItem(2, "Orders", Icons.shopping_bag),
           _menuItem(3, "Reports", Icons.bar_chart),
           _menuItem(4, "Settings", Icons.settings),
+
           const Spacer(),
           const Divider(color: Colors.white24),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.redAccent),
-            title: const Text(
-              "Logout",
-              style: TextStyle(color: Colors.white),
-            ),
+            title: const Text("Logout", style: TextStyle(color: Colors.white)),
             onTap: () async {
               await auth.logout();
               Navigator.pushNamedAndRemoveUntil(
@@ -109,25 +107,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // ---------------- Menu Item ----------------
   Widget _menuItem(int index, String title, IconData icon) {
-    final bool selected = selectedIndex == index;
+    final selected = selectedIndex == index;
+
     return InkWell(
       onTap: () => setState(() => selectedIndex = index),
-      hoverColor: Colors.grey.shade800,
       child: Container(
-        decoration: selected
-            ? BoxDecoration(
-                color: Colors.blue.withOpacity(0.2),
-                borderRadius: const BorderRadius.horizontal(right: Radius.circular(16)),
-              )
-            : null,
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? Colors.blue.withOpacity(0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: ListTile(
-          leading: Icon(icon, color: selected ? Colors.blue : Colors.white),
+          leading: Icon(icon, color: selected ? Colors.blue : Colors.white70),
           title: Text(
             title,
             style: TextStyle(
-              color: selected ? Colors.blue : Colors.white,
+              color: selected ? Colors.blue : Colors.white70,
               fontWeight: selected ? FontWeight.bold : FontWeight.normal,
             ),
           ),
@@ -136,7 +132,29 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // ---------------- Pages ----------------
+  // ================= TOP BAR =================
+  Widget _buildTopBar() {
+    return Container(
+      height: 64,
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 4),
+        ],
+      ),
+      child: Row(
+        children: const [
+          Text(
+            "Dashboard",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ================= PAGES =================
   Widget _getPage() {
     switch (selectedIndex) {
       case 0:
@@ -154,42 +172,50 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
   }
 
-  // ---------------- Dashboard Page ----------------
+  // ================= DASHBOARD =================
   Widget _dashboardPage() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Welcome Admin 👋",
-          style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+          "Welcome back, Admin 👋",
+          style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          "Overview of your application",
+          style: TextStyle(color: Colors.black54),
         ),
         const SizedBox(height: 24),
+
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: usersRef.snapshots(),
             builder: (context, usersSnapshot) {
-              if (usersSnapshot.connectionState == ConnectionState.waiting) {
+              if (!usersSnapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());
               }
-              final userCount = usersSnapshot.data?.docs.length ?? 0;
+
+              final userCount = usersSnapshot.data!.docs.length;
 
               return StreamBuilder<QuerySnapshot>(
                 stream: ordersRef.snapshots(),
                 builder: (context, ordersSnapshot) {
-                  if (ordersSnapshot.connectionState == ConnectionState.waiting) {
+                  if (!ordersSnapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
                   }
-                  final orderCount = ordersSnapshot.data?.docs.length ?? 0;
+
+                  final orderCount = ordersSnapshot.data!.docs.length;
 
                   return GridView.count(
-                    crossAxisCount: 2,
+                    crossAxisCount: 4,
                     crossAxisSpacing: 20,
                     mainAxisSpacing: 20,
                     children: [
-                      _dashboardCard("Users", userCount, Icons.people, Colors.blue),
-                      _dashboardCard("Orders", orderCount, Icons.shopping_cart, Colors.green),
-                      _dashboardCard("Reports", 0, Icons.bar_chart, Colors.orange), // placeholder
-                      _dashboardCard("Settings", 0, Icons.settings, Colors.purple), // placeholder
+                      _statCard("Users", userCount, Icons.people, Colors.blue),
+                      _statCard("Orders", orderCount, Icons.shopping_cart, Colors.green),
+                      _statCard("Reports", 0, Icons.bar_chart, Colors.orange),
+                      _statCard("Settings", 0, Icons.settings, Colors.purple),
                     ],
                   );
                 },
@@ -201,29 +227,38 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _dashboardCard(String title, int count, IconData icon, Color color) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 6,
-      shadowColor: Colors.black26,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 40, color: color),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+  Widget _statCard(String title, int value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 6),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            backgroundColor: color.withOpacity(0.15),
+            child: Icon(icon, color: color),
+          ),
+          const Spacer(),
+          Text(
+            title,
+            style: const TextStyle(color: Colors.black54),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value.toString(),
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: color,
             ),
-            const SizedBox(height: 8),
-            Text(
-              count.toString(),
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: color),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -9,37 +9,55 @@ class AdminReports extends StatelessWidget {
 
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
+  // ================= FETCH STATS =================
   Future<Map<String, dynamic>> getStats() async {
     final usersSnap = await firestore.collection('users').get();
     final ordersSnap = await firestore.collection('orders').get();
 
-    final orders = ordersSnap.docs;
-    final pendingOrders =
-        orders.where((o) => (o.data() as Map<String, dynamic>)['status'] == 'pending').length;
-    final deliveredOrders =
-        orders.where((o) => (o.data() as Map<String, dynamic>)['status'] == 'delivered').length;
+    int pendingOrders = 0;
+    int deliveredOrders = 0;
     double totalRevenue = 0;
-    for (var o in orders) {
-      totalRevenue += (o.data() as Map<String, dynamic>)['total'] ?? 0;
+
+    for (var doc in ordersSnap.docs) {
+      final data = doc.data();
+
+      // Status (safe fallback)
+      final status = data['status'] ?? 'pending';
+      if (status == 'pending') pendingOrders++;
+      if (status == 'delivered') deliveredOrders++;
+
+      // Revenue (safe numeric check)
+      final total = data['total'];
+      if (total is num) {
+        totalRevenue += total.toDouble();
+      }
     }
 
     return {
       'users': usersSnap.docs.length,
-      'orders': orders.length,
+      'orders': ordersSnap.docs.length,
       'pending': pendingOrders,
       'delivered': deliveredOrders,
       'revenue': totalRevenue,
     };
   }
 
+  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>>(
       future: getStats(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData) {
+          return const Center(child: Text("Failed to load reports"));
+        }
 
         final data = snapshot.data!;
+
         return SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -49,9 +67,14 @@ class AdminReports extends StatelessWidget {
                 "Admin Dashboard Reports",
                 style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+              const Text(
+                "Overview of users, orders, and revenue",
+                style: TextStyle(color: Colors.black54),
+              ),
+              const SizedBox(height: 20),
 
-              // ---------------- Export PDF Button ----------------
+              // ================= EXPORT PDF =================
               Align(
                 alignment: Alignment.centerRight,
                 child: ElevatedButton.icon(
@@ -60,9 +83,9 @@ class AdminReports extends StatelessWidget {
                   onPressed: () => _exportPDF(data),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-              // ---------------- Summary Cards ----------------
+              // ================= SUMMARY CARDS =================
               Wrap(
                 spacing: 16,
                 runSpacing: 16,
@@ -71,37 +94,52 @@ class AdminReports extends StatelessWidget {
                   _summaryCard("Total Orders", data['orders'], Icons.shopping_cart, Colors.orange),
                   _summaryCard("Pending Orders", data['pending'], Icons.pending_actions, Colors.red),
                   _summaryCard("Delivered Orders", data['delivered'], Icons.check_circle, Colors.green),
-                  _summaryCard("Total Revenue", data['revenue'].toInt(), Icons.attach_money, Colors.purple),
+                  _summaryCard(
+                    "Total Revenue",
+                    data['revenue'].toInt(),
+                    Icons.attach_money,
+                    Colors.purple,
+                  ),
                 ],
               ),
-              const SizedBox(height: 24),
 
-              // ---------------- Pie Chart ----------------
+              const SizedBox(height: 32),
+
+              // ================= PIE CHART =================
               const Text(
                 "Order Status Distribution",
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
+
               SizedBox(
-                height: 200,
+                height: 220,
                 child: PieChart(
                   PieChartData(
+                    sectionsSpace: 4,
+                    centerSpaceRadius: 45,
                     sections: [
                       PieChartSectionData(
                         value: (data['pending'] as int).toDouble(),
-                        color: Colors.red,
+                        color: Colors.orange,
                         title: 'Pending',
-                        titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        radius: 60,
+                        titleStyle: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       PieChartSectionData(
                         value: (data['delivered'] as int).toDouble(),
                         color: Colors.green,
                         title: 'Delivered',
-                        titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        radius: 60,
+                        titleStyle: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
-                    sectionsSpace: 4,
-                    centerSpaceRadius: 40,
                   ),
                 ),
               ),
@@ -112,22 +150,33 @@ class AdminReports extends StatelessWidget {
     );
   }
 
-  // ---------------- Summary Card Widget ----------------
+  // ================= SUMMARY CARD =================
   Widget _summaryCard(String title, int value, IconData icon, Color color) {
     return SizedBox(
-      width: 160,
+      width: 170,
       child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
               Icon(icon, size: 36, color: color),
               const SizedBox(height: 12),
-              Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
-              Text(value.toString(), style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: color)),
+              Text(
+                value.toString(),
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
             ],
           ),
         ),
@@ -135,7 +184,7 @@ class AdminReports extends StatelessWidget {
     );
   }
 
-  // ---------------- PDF Export ----------------
+  // ================= PDF EXPORT =================
   void _exportPDF(Map<String, dynamic> data) async {
     final pdf = pw.Document();
 
@@ -144,13 +193,21 @@ class AdminReports extends StatelessWidget {
         build: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text("Admin Dashboard Reports", style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+            pw.Text(
+              "Admin Dashboard Reports",
+              style: pw.TextStyle(
+                fontSize: 24,
+                fontWeight: pw.FontWeight.bold,
+              ),
+            ),
             pw.SizedBox(height: 20),
             pw.Text("Total Users: ${data['users']}"),
             pw.Text("Total Orders: ${data['orders']}"),
             pw.Text("Pending Orders: ${data['pending']}"),
             pw.Text("Delivered Orders: ${data['delivered']}"),
-            pw.Text("Total Revenue: \$${data['revenue'].toStringAsFixed(2)}"),
+            pw.Text(
+              "Total Revenue: \$${data['revenue'].toStringAsFixed(2)}",
+            ),
           ],
         ),
       ),

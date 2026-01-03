@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'admin/admin_dashboard.dart';
+import 'screens/orders/order_success_screen.dart';
 
 import 'firebase_options.dart';
 
@@ -20,7 +21,7 @@ import 'providers/favorite_provider.dart';
 import 'providers/order_provider.dart';
 
 import 'theme/app_theme.dart';
-
+import 'screens/orders/place_order_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/forgot_password.dart';
@@ -77,6 +78,10 @@ class MyApp extends StatelessWidget {
                   const ForgotPasswordScreen(),
                   AdminDashboard.route: (_) => const AdminDashboard(),
                   // OrderHistoryScreen.route: (_) => const OrderHistoryScreen(),
+                  
+  '/order-success': (_) => const OrderSuccessScreen(),
+
+          
 
              OrderHistoryScreen.route: (_) => const OrderHistoryScreen(),
 
