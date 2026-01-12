@@ -1,16 +1,117 @@
 
 
 
+// import 'package:e_shop/utils/add_test_orders.dart';
+
+
+// import 'package:flutter/material.dart';
+// import 'package:provider/provider.dart';
+// import 'package:firebase_core/firebase_core.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
+// import 'admin/admin_dashboard.dart';
+// import 'screens/orders/order_success_screen.dart';
+
+// import 'firebase_options.dart';
+
+// import 'providers/MyAuthProvider.dart';
+// import 'providers/cart_provider.dart';
+// import 'providers/restaurant_provider.dart';
+// import 'providers/theme_provider.dart';
+// import 'providers/favorite_provider.dart';
+// import 'providers/order_provider.dart';
+
+// import 'theme/app_theme.dart';
+// import 'screens/orders/place_order_screen.dart';
+// import 'screens/auth/login_screen.dart';
+// import 'screens/auth/register_screen.dart';
+// import 'screens/auth/forgot_password.dart';
+
+// import 'root_screens/root_screen.dart';
+// import 'screens/cart/cart_screen.dart';
+// import 'screens/orders/order_history_screen.dart';
+
+// void main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+
+//   await Firebase.initializeApp(
+//     options: DefaultFirebaseOptions.currentPlatform,
+//   );
+
+//   runApp(const MyApp());
+// }
+
+// class MyApp extends StatelessWidget {
+//   const MyApp({super.key});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return MultiProvider(
+//       providers: [
+//         ChangeNotifierProvider(create: (_) => MyAuthProvider()),
+//         ChangeNotifierProvider(create: (_) => CartProvider()),
+//         ChangeNotifierProvider(create: (_) => RestaurantProvider()),
+//         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+//         ChangeNotifierProvider(create: (_) => FavoriteProvider()),
+//         ChangeNotifierProvider(create: (_) => OrderProvider()),
+//       ],
+//       child: Consumer<ThemeProvider>(
+//         builder: (context, theme, _) {
+//           return MaterialApp(
+//             debugShowCheckedModeBanner: false,
+
+//             /// 🎨 THEMES
+//             theme: AppTheme.light,
+//             darkTheme: AppTheme.dark,
+//             themeMode: theme.themeMode,
+
+//             /// 🔐 AUTH FLOW
+//             initialRoute:
+//                 FirebaseAuth.instance.currentUser == null
+//                     ? LoginScreen.route
+//                     : RootScreen.route,
+
+//             /// 🧭 ROUTES (🔥 FIXED)
+//             routes: {
+//               LoginScreen.route: (_) => const LoginScreen(),
+//               RegisterScreen.route: (_) => const RegisterScreen(),
+//               ForgotPasswordScreen.route: (_) =>
+//                   const ForgotPasswordScreen(),
+//                   AdminDashboard.route: (_) => const AdminDashboard(),
+//                   // OrderHistoryScreen.route: (_) => const OrderHistoryScreen(),
+                  
+//   '/order-success': (_) => const OrderSuccessScreen(),
+
+          
+
+//              OrderHistoryScreen.route: (_) => const OrderHistoryScreen(),
+
+//               RootScreen.route: (_) => const RootScreen(),
+//               CartScreen.route: (_) => const CartScreen(),
+//              '/add-test-orders': (_) => const AddTestOrdersScreen(),
+
+
+//             },
+//           );
+//         },
+//       ),
+//     );
+//   }
+// }
+
+
+
+
+
+
+
+
 import 'package:e_shop/utils/add_test_orders.dart';
-
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+
 import 'admin/admin_dashboard.dart';
 import 'screens/orders/order_success_screen.dart';
-
 import 'firebase_options.dart';
 
 import 'providers/MyAuthProvider.dart';
@@ -21,7 +122,6 @@ import 'providers/favorite_provider.dart';
 import 'providers/order_provider.dart';
 
 import 'theme/app_theme.dart';
-import 'screens/orders/place_order_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/forgot_password.dart';
@@ -64,32 +164,45 @@ class MyApp extends StatelessWidget {
             darkTheme: AppTheme.dark,
             themeMode: theme.themeMode,
 
-            /// 🔐 AUTH FLOW
-            initialRoute:
-                FirebaseAuth.instance.currentUser == null
-                    ? LoginScreen.route
-                    : RootScreen.route,
+            /// 🔐 AUTH GATE (✅ CORRECT WAY)
+            home: Consumer<MyAuthProvider>(
+              builder: (context, auth, _) {
+                // Still loading auth state
+                if (auth.isLoading) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
 
-            /// 🧭 ROUTES (🔥 FIXED)
+                // Not logged in → Login
+                if (!auth.isLoggedIn) {
+                  return const LoginScreen();
+                }
+
+                // Admin → Admin dashboard
+                if (auth.isAdmin) {
+                  return const AdminDashboard();
+                }
+
+                // Normal user → Home (shopping)
+                return const RootScreen();
+              },
+            ),
+
+            /// 🧭 ROUTES
             routes: {
               LoginScreen.route: (_) => const LoginScreen(),
               RegisterScreen.route: (_) => const RegisterScreen(),
               ForgotPasswordScreen.route: (_) =>
                   const ForgotPasswordScreen(),
-                  AdminDashboard.route: (_) => const AdminDashboard(),
-                  // OrderHistoryScreen.route: (_) => const OrderHistoryScreen(),
-                  
-  '/order-success': (_) => const OrderSuccessScreen(),
 
-          
-
-             OrderHistoryScreen.route: (_) => const OrderHistoryScreen(),
-
+              AdminDashboard.route: (_) => const AdminDashboard(),
               RootScreen.route: (_) => const RootScreen(),
               CartScreen.route: (_) => const CartScreen(),
-             '/add-test-orders': (_) => const AddTestOrdersScreen(),
 
-
+              OrderHistoryScreen.route: (_) => const OrderHistoryScreen(),
+              '/order-success': (_) => const OrderSuccessScreen(),
+              '/add-test-orders': (_) => const AddTestOrdersScreen(),
             },
           );
         },

@@ -8,7 +8,7 @@
 // import '../auth/forgot_password.dart';
 // import '../../root_screens/root_screen.dart';
 // import '../../admin/admin_dashboard.dart';
-// import '../home/home_screen.dart'; // Make sure this import is correct
+// import '../home/home_screen.dart';
 
 // class LoginScreen extends StatefulWidget {
 //   static const route = "/login";
@@ -33,7 +33,7 @@
 //   Future<void> _login() async {
 //     if (_email.text.isEmpty || _pass.text.isEmpty) {
 //       ScaffoldMessenger.of(context).showSnackBar(
-//         const SnackBar(content: Text('All fields are required')),
+//         const SnackBar(content: Text('Email and password required')),
 //       );
 //       return;
 //     }
@@ -41,22 +41,28 @@
 //     setState(() => _loading = true);
 
 //     try {
-//       await AuthService().login(_email.text.trim(), _pass.text.trim());
+//       // ✅ Firebase Auth login
+//       await AuthService().login(
+//         _email.text.trim(),
+//         _pass.text.trim(),
+//       );
 
+//       // ✅ Reload user + role
 //       final auth = context.read<MyAuthProvider>();
-//       await auth.loadUserRole();
+//       await auth.reloadUser();
 
 //       if (!mounted) return;
 
+//       // ✅ Navigate by role
 //       if (auth.isAdmin) {
-//         Navigator.pushReplacement(
+//         Navigator.pushReplacementNamed(
 //           context,
-//           MaterialPageRoute(builder: (_) => AdminDashboard()),
+//           AdminDashboard.route,
 //         );
 //       } else {
-//         Navigator.pushReplacement(
+//         Navigator.pushReplacementNamed(
 //           context,
-//           MaterialPageRoute(builder: (_) => RootScreen()),
+//           RootScreen.route,
 //         );
 //       }
 //     } catch (e) {
@@ -75,71 +81,32 @@
 //         child: SingleChildScrollView(
 //           padding: const EdgeInsets.all(24),
 //           child: Column(
-//             mainAxisAlignment: MainAxisAlignment.center,
 //             children: [
 //               const SizedBox(height: 32),
 
-//               // Email
 //               TextField(
 //                 controller: _email,
-//                 keyboardType: TextInputType.emailAddress,
-//                 decoration: InputDecoration(
-//                   labelText: 'Email',
-//                   prefixIcon: const Icon(Icons.email),
-//                   border: OutlineInputBorder(
-//                     borderRadius: BorderRadius.circular(12),
-//                   ),
-//                   filled: true,
-//                   fillColor: Colors.grey[200],
-//                 ),
+//                 decoration: const InputDecoration(labelText: 'Email'),
 //               ),
 //               const SizedBox(height: 16),
 
-//               // Password
 //               TextField(
 //                 controller: _pass,
 //                 obscureText: true,
-//                 decoration: InputDecoration(
-//                   labelText: 'Password',
-//                   prefixIcon: const Icon(Icons.lock),
-//                   border: OutlineInputBorder(
-//                     borderRadius: BorderRadius.circular(12),
-//                   ),
-//                   filled: true,
-//                   fillColor: Colors.grey[200],
-//                 ),
+//                 decoration: const InputDecoration(labelText: 'Password'),
 //               ),
 //               const SizedBox(height: 24),
 
-//               // Login button
 //               _loading
 //                   ? const CircularProgressIndicator()
 //                   : SizedBox(
 //                       width: double.infinity,
-//                       height: 50,
 //                       child: ElevatedButton(
 //                         onPressed: _login,
-//                         style: ElevatedButton.styleFrom(
-//                           shape: RoundedRectangleBorder(
-//                             borderRadius: BorderRadius.circular(12),
-//                           ),
-//                         ),
-//                         child: const Text(
-//                           'Login',
-//                           style: TextStyle(fontSize: 16),
-//                         ),
+//                         child: const Text('Login'),
 //                       ),
 //                     ),
-//               const SizedBox(height: 16),
 
-//               // Forgot password
-//               TextButton(
-//                 onPressed: () =>
-//                     Navigator.pushNamed(context, ForgotPasswordScreen.route),
-//                 child: const Text('Forgot password?'),
-//               ),
-
-//               // Register
 //               TextButton(
 //                 onPressed: () => Navigator.push(
 //                   context,
@@ -148,20 +115,12 @@
 //                 child: const Text('Create an account'),
 //               ),
 
-//               const SizedBox(height: 16),
-
-//               // Continue as Guest
 //               TextButton(
-//                 onPressed: () {
-//                   Navigator.pushReplacement(
-//                     context,
-//                     MaterialPageRoute(builder: (_) => const HomeScreen()),
-//                   );
-//                 },
-//                 child: const Text(
-//                   'Continue as Guest',
-//                   style: TextStyle(fontWeight: FontWeight.bold),
+//                 onPressed: () => Navigator.pushReplacement(
+//                   context,
+//                   MaterialPageRoute(builder: (_) => const HomeScreen()),
 //                 ),
+//                 child: const Text('Continue as Guest'),
 //               ),
 //             ],
 //           ),
@@ -170,6 +129,7 @@
 //     );
 //   }
 // }
+
 
 
 
@@ -220,29 +180,25 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = true);
 
     try {
-      // ✅ Firebase Auth login
+      // 1️⃣ Login with Firebase
       await AuthService().login(
         _email.text.trim(),
         _pass.text.trim(),
       );
 
-      // ✅ Reload user + role
+      // 2️⃣ Reload user + role
       final auth = context.read<MyAuthProvider>();
       await auth.reloadUser();
 
       if (!mounted) return;
 
-      // ✅ Navigate by role
+      // 3️⃣ Navigate by role
       if (auth.isAdmin) {
-        Navigator.pushReplacementNamed(
-          context,
-          AdminDashboard.route,
-        );
+        // 👑 Admin goes to admin panel
+        Navigator.pushReplacementNamed(context, AdminDashboard.route);
       } else {
-        Navigator.pushReplacementNamed(
-          context,
-          RootScreen.route,
-        );
+        // 👤 Normal user goes to shopping home
+        Navigator.pushReplacementNamed(context, RootScreen.route);
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -263,42 +219,76 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const SizedBox(height: 32),
 
+              const Text(
+                "Welcome Back 👋",
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+              ),
+
+              const SizedBox(height: 24),
+
               TextField(
                 controller: _email,
-                decoration: const InputDecoration(labelText: 'Email'),
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 16),
 
               TextField(
                 controller: _pass,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Password'),
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                  border: OutlineInputBorder(),
+                ),
               ),
+
               const SizedBox(height: 24),
 
               _loading
                   ? const CircularProgressIndicator()
                   : SizedBox(
                       width: double.infinity,
+                      height: 48,
                       child: ElevatedButton(
                         onPressed: _login,
                         child: const Text('Login'),
                       ),
                     ),
 
+              const SizedBox(height: 12),
+
               TextButton(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                  );
+                },
                 child: const Text('Create an account'),
               ),
 
               TextButton(
-                onPressed: () => Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const HomeScreen()),
-                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                  );
+                },
+                child: const Text('Forgot password?'),
+              ),
+
+              const Divider(height: 32),
+
+              TextButton(
+                onPressed: () {
+                  // 👤 Guest goes to home (no login)
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const HomeScreen()),
+                  );
+                },
                 child: const Text('Continue as Guest'),
               ),
             ],
