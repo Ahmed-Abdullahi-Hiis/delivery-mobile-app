@@ -530,9 +530,6 @@
 
 
 
-
-
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -549,6 +546,13 @@ import '../../widgets/floating_cart_button.dart';
 import '../cart/cart_screen.dart';
 import '../restaurants/restaurant_detail_screen.dart';
 import '../profile/profile_screen.dart';
+
+// ✅ INFO PAGES
+import '../info/faq_screen.dart';
+import '../info/about_screen.dart';
+import '../info/contact_screen.dart';
+import '../info/privacy_screen.dart';
+import '../info/terms_and_conditions_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   static const route = "/home";
@@ -793,7 +797,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     restaurants: filteredRestaurants,
                   ),
 
-                  // ================= EMPTY STATE =================
                   if (filteredRestaurants.isEmpty)
                     const Padding(
                       padding: EdgeInsets.all(24),
@@ -904,8 +907,31 @@ class _HomeScreenState extends State<HomeScreen> {
   static Widget _footerLink(BuildContext context, String title) {
     return InkWell(
       onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("$title page coming soon")),
+        Widget page;
+
+        switch (title) {
+          case "FAQ":
+            page = const FaqScreen();
+            break;
+          case "About":
+            page = const AboutScreen();
+            break;
+          case "Contact":
+            page = const ContactScreen();
+            break;
+          case "Privacy Policy":
+            page = const PrivacyScreen();
+            break;
+          case "Terms":
+            page = const TermsAndConditionsScreen();
+            break;
+          default:
+            return;
+        }
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => page),
         );
       },
       child: Text(
