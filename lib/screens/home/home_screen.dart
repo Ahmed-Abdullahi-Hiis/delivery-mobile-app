@@ -533,8 +533,6 @@
 
 
 
-
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -641,8 +639,9 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   List<RestaurantModel> get filteredRestaurants {
+    final query = _searchQuery.toLowerCase();
     return _restaurants.where((r) {
-      final search = r.name.toLowerCase().contains(_searchQuery.toLowerCase());
+      final search = r.name.toLowerCase().contains(query);
       final free = !_freeDeliveryOnly || r.freeDelivery;
       final category =
           _selectedCategory == 0 || r.category == _categories[_selectedCategory];
@@ -660,7 +659,10 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: const Color(0xFFF6F7FB),
       appBar: AppBar(
         elevation: 0,
-        title: const Text("Afro Delivery"),
+        title: const Text(
+          "Afro Delivery 🍔",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
             icon: Icon(theme.isDark ? Icons.dark_mode : Icons.light_mode),
@@ -720,10 +722,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
-                  // Search
+                  // ================= SEARCH =================
                   TextField(
+                    textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
                       hintText: "Search restaurants",
+                      hintStyle: const TextStyle(color: Colors.black45),
                       prefixIcon: const Icon(Icons.search),
                       filled: true,
                       border: OutlineInputBorder(
@@ -736,7 +740,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   const SizedBox(height: 16),
 
-                  // Categories
+                  // ================= CATEGORIES =================
                   SizedBox(
                     height: 44,
                     child: ListView.builder(
@@ -789,6 +793,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     restaurants: filteredRestaurants,
                   ),
 
+                  // ================= EMPTY STATE =================
+                  if (filteredRestaurants.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Center(
+                        child: Text(
+                          "No restaurants found 😢",
+                          style:
+                              TextStyle(fontSize: 18, color: Colors.black54),
+                        ),
+                      ),
+                    ),
+
                   const SizedBox(height: 24),
 
                   const Text(
@@ -838,13 +855,34 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   const SizedBox(height: 40),
 
+                  // ================= FOOTER =================
                   const Divider(),
-                  const Center(
-                    child: Text(
-                      "© 2025 Afro Delivery · All rights reserved",
-                      style: TextStyle(color: Colors.grey),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Column(
+                      children: [
+                        Wrap(
+                          spacing: 24,
+                          runSpacing: 12,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            _footerLink(context, "FAQ"),
+                            _footerLink(context, "About"),
+                            _footerLink(context, "Contact"),
+                            _footerLink(context, "Privacy Policy"),
+                            _footerLink(context, "Terms"),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          "© 2026 Afro Delivery · All rights reserved",
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ],
                     ),
                   ),
+
                   const SizedBox(height: 80),
                 ],
               ),
@@ -857,6 +895,24 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  // ================= FOOTER LINK =================
+  static Widget _footerLink(BuildContext context, String title) {
+    return InkWell(
+      onTap: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("$title page coming soon")),
+        );
+      },
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: Colors.orange,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
