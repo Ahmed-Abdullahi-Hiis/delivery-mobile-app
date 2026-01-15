@@ -34,6 +34,10 @@ dependencies:
   stack_trace: ^1.12.1
   url_launcher: ^6.3.2
   web: ^0.5.1
+  image_picker: ^1.2.1
+  http: ^1.6.0
+  iconly: ^1.0.1
+  google_sign_in: ^6.1.5
 
 
 
@@ -60,6 +64,7 @@ flutter:
     - assets/images/mixed food.jpeg
     - assets/images/italian food.jpeg
     - assets/images/shuwarma.jpg
+    - assets/images/google.png
     
 
 
