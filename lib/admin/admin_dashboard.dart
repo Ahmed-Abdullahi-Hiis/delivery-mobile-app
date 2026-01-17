@@ -1,6 +1,11 @@
+
+
+
+// import 'admin_restaurant_list.dart';
 // import 'package:flutter/material.dart';
 // import 'package:provider/provider.dart';
 // import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'admin_restaurant.dart';
 
 // import '../../providers/MyAuthProvider.dart';
 // import 'admin_manage_users.dart';
@@ -71,7 +76,7 @@
 //         children: [
 //           const SizedBox(height: 40),
 //           const Text(
-//             "ADMIN PANEL",
+//             "FOOD ADMIN",
 //             style: TextStyle(
 //               color: Colors.white,
 //               fontSize: 20,
@@ -86,6 +91,9 @@
 //           _menuItem(2, "Orders", Icons.shopping_bag),
 //           _menuItem(3, "Reports", Icons.bar_chart),
 //           _menuItem(4, "Settings", Icons.settings),
+//           _menuItem(5, "Restaurants", Icons.restaurant),
+         
+
 
 //           const Spacer(),
 //           const Divider(color: Colors.white24),
@@ -143,8 +151,8 @@
 //           BoxShadow(color: Colors.black12, blurRadius: 4),
 //         ],
 //       ),
-//       child: Row(
-//         children: const [
+//       child: const Row(
+//         children: [
 //           Text(
 //             "Dashboard",
 //             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -167,6 +175,9 @@
 //         return AdminReports();
 //       case 4:
 //         return AdminSettings();
+//         case 5:
+//       return const AdminRestaurant();
+
 //       default:
 //         return const Center(child: Text("Page not found"));
 //     }
@@ -174,62 +185,101 @@
 
 //   // ================= DASHBOARD =================
 //   Widget _dashboardPage() {
-//     return Column(
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       children: [
-//         const Text(
-//           "Welcome back, Admin 👋",
-//           style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-//         ),
-//         const SizedBox(height: 6),
-//         const Text(
-//           "Overview of your application",
-//           style: TextStyle(color: Colors.black54),
-//         ),
-//         const SizedBox(height: 24),
+//     return StreamBuilder<QuerySnapshot>(
+//       stream: ordersRef.snapshots(),
+//       builder: (context, ordersSnapshot) {
+//         if (!ordersSnapshot.hasData) {
+//           return const Center(child: CircularProgressIndicator());
+//         }
 
-//         Expanded(
-//           child: StreamBuilder<QuerySnapshot>(
-//             stream: usersRef.snapshots(),
-//             builder: (context, usersSnapshot) {
-//               if (!usersSnapshot.hasData) {
-//                 return const Center(child: CircularProgressIndicator());
+//         return StreamBuilder<QuerySnapshot>(
+//           stream: usersRef.snapshots(),
+//           builder: (context, usersSnapshot) {
+//             if (!usersSnapshot.hasData) {
+//               return const Center(child: CircularProgressIndicator());
+//             }
+
+//             final orders = ordersSnapshot.data!.docs;
+//             final usersCount = usersSnapshot.data!.docs.length;
+
+//             int totalOrders = orders.length;
+//             int pending = 0;
+//             int preparing = 0;
+//             int delivering = 0;
+//             int delivered = 0;
+//             int todayOrders = 0;
+//             double revenue = 0;
+
+//             final today = DateTime.now();
+
+//             for (var doc in orders) {
+//               final data = doc.data() as Map<String, dynamic>;
+//               final status = data['status'] ?? 'pending';
+//               final total = data['total'];
+//               final createdAt = data['createdAt'];
+
+//               if (status == 'pending') pending++;
+//               if (status == 'preparing') preparing++;
+//               if (status == 'delivering') delivering++;
+//               if (status == 'delivered') delivered++;
+
+//               if (total is num) revenue += total.toDouble();
+
+//               if (createdAt is Timestamp) {
+//                 final d = createdAt.toDate();
+//                 if (d.year == today.year &&
+//                     d.month == today.month &&
+//                     d.day == today.day) {
+//                   todayOrders++;
+//                 }
 //               }
+//             }
 
-//               final userCount = usersSnapshot.data!.docs.length;
+//             return Column(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+//                 const Text(
+//                   "Food Delivery Overview 🍔",
+//                   style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+//                 ),
+//                 const SizedBox(height: 6),
+//                 const Text(
+//                   "Business statistics summary",
+//                   style: TextStyle(color: Colors.black54),
+//                 ),
+//                 const SizedBox(height: 24),
 
-//               return StreamBuilder<QuerySnapshot>(
-//                 stream: ordersRef.snapshots(),
-//                 builder: (context, ordersSnapshot) {
-//                   if (!ordersSnapshot.hasData) {
-//                     return const Center(child: CircularProgressIndicator());
-//                   }
-
-//                   final orderCount = ordersSnapshot.data!.docs.length;
-
-//                   return GridView.count(
+//                 Expanded(
+//                   child: GridView.count(
 //                     crossAxisCount: 4,
 //                     crossAxisSpacing: 20,
 //                     mainAxisSpacing: 20,
+//                     childAspectRatio: 1.2, // more height, no overflow
 //                     children: [
-//                       _statCard("Users", userCount, Icons.people, Colors.blue),
-//                       _statCard("Orders", orderCount, Icons.shopping_cart, Colors.green),
-//                       _statCard("Reports", 0, Icons.bar_chart, Colors.orange),
-//                       _statCard("Settings", 0, Icons.settings, Colors.purple),
+//                       _statCard("Users", usersCount.toString(), Icons.people, Colors.blue),
+//                       _statCard("Total Orders", totalOrders.toString(), Icons.shopping_cart, Colors.teal),
+//                       _statCard("Today Orders", todayOrders.toString(), Icons.today, Colors.indigo),
+//                       _statCard("Revenue", "Ksh ${revenue.toStringAsFixed(0)}", Icons.attach_money, Colors.green),
+
+//                       _statCard("Pending", pending.toString(), Icons.pending_actions, Colors.orange),
+//                       _statCard("Preparing", preparing.toString(), Icons.restaurant, Colors.blue),
+//                       _statCard("Delivering", delivering.toString(), Icons.delivery_dining, Colors.purple),
+//                       _statCard("Delivered", delivered.toString(), Icons.check_circle, Colors.green),
 //                     ],
-//                   );
-//                 },
-//               );
-//             },
-//           ),
-//         ),
-//       ],
+//                   ),
+//                 ),
+//               ],
+//             );
+//           },
+//         );
+//       },
 //     );
 //   }
 
-//   Widget _statCard(String title, int value, IconData icon, Color color) {
+//   // ================= STAT CARD (SAFE, NO OVERFLOW) =================
+//   Widget _statCard(String title, String value, IconData icon, Color color) {
 //     return Container(
-//       padding: const EdgeInsets.all(20),
+//       padding: const EdgeInsets.all(16),
 //       decoration: BoxDecoration(
 //         color: Colors.white,
 //         borderRadius: BorderRadius.circular(18),
@@ -238,22 +288,29 @@
 //         ],
 //       ),
 //       child: Column(
+//         mainAxisAlignment: MainAxisAlignment.center,
 //         crossAxisAlignment: CrossAxisAlignment.start,
 //         children: [
 //           CircleAvatar(
+//             radius: 20,
 //             backgroundColor: color.withOpacity(0.15),
-//             child: Icon(icon, color: color),
+//             child: Icon(icon, color: color, size: 22),
 //           ),
-//           const Spacer(),
+//           const SizedBox(height: 12),
 //           Text(
 //             title,
-//             style: const TextStyle(color: Colors.black54),
+//             style: const TextStyle(
+//               color: Colors.black54,
+//               fontSize: 14,
+//             ),
 //           ),
-//           const SizedBox(height: 4),
+//           const SizedBox(height: 6),
 //           Text(
-//             value.toString(),
+//             value,
+//             maxLines: 1,
+//             overflow: TextOverflow.ellipsis,
 //             style: TextStyle(
-//               fontSize: 28,
+//               fontSize: 22,
 //               fontWeight: FontWeight.bold,
 //               color: color,
 //             ),
@@ -269,16 +326,17 @@
 
 
 
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../providers/MyAuthProvider.dart';
+
 import 'admin_manage_users.dart';
 import 'admin_orders.dart';
 import 'admin_reports.dart';
 import 'admin_settings.dart';
+import 'admin_restaurant_list.dart';
 
 class AdminDashboard extends StatefulWidget {
   static const route = "/admin-dashboard";
@@ -358,6 +416,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           _menuItem(2, "Orders", Icons.shopping_bag),
           _menuItem(3, "Reports", Icons.bar_chart),
           _menuItem(4, "Settings", Icons.settings),
+          _menuItem(5, "Restaurants", Icons.restaurant),
 
           const Spacer(),
           const Divider(color: Colors.white24),
@@ -439,12 +498,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
         return AdminReports();
       case 4:
         return AdminSettings();
+      case 5:
+        return const AdminRestaurantList(); // ✅ THIS IS THE IMPORTANT FIX
       default:
         return const Center(child: Text("Page not found"));
     }
   }
 
-  // ================= DASHBOARD =================
+  // ================= DASHBOARD PAGE =================
   Widget _dashboardPage() {
     return StreamBuilder<QuerySnapshot>(
       stream: ordersRef.snapshots(),
@@ -515,7 +576,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     crossAxisCount: 4,
                     crossAxisSpacing: 20,
                     mainAxisSpacing: 20,
-                    childAspectRatio: 1.2, // more height, no overflow
+                    childAspectRatio: 1.2,
                     children: [
                       _statCard("Users", usersCount.toString(), Icons.people, Colors.blue),
                       _statCard("Total Orders", totalOrders.toString(), Icons.shopping_cart, Colors.teal),
@@ -537,7 +598,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // ================= STAT CARD (SAFE, NO OVERFLOW) =================
+  // ================= STAT CARD =================
   Widget _statCard(String title, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -560,10 +621,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           const SizedBox(height: 12),
           Text(
             title,
-            style: const TextStyle(
-              color: Colors.black54,
-              fontSize: 14,
-            ),
+            style: const TextStyle(color: Colors.black54, fontSize: 14),
           ),
           const SizedBox(height: 6),
           Text(
