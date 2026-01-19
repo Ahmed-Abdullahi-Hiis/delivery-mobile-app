@@ -1,46 +1,3 @@
-//  import 'package:flutter/material.dart';
-// import 'track_order_screen.dart';
-
-// class OrderDetailsScreen extends StatelessWidget {
-//   final String orderId;
-//   const OrderDetailsScreen({super.key, required this.orderId});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     // replace with real data fetching
-//     return Scaffold(
-//       appBar: AppBar(title: Text('Order Details - $orderId')),
-//       body: Padding(
-//         padding: const EdgeInsets.all(16),
-//         child: Column(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: [
-//             const Text('Items', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-//             const SizedBox(height: 8),
-//             const ListTile(title: Text('Chicken Burger'), subtitle: Text('x1 - Ksh 450')),
-//             const ListTile(title: Text('Fries'), subtitle: Text('x1 - Ksh 120')),
-//             const Spacer(),
-//             ElevatedButton.icon(
-//               onPressed: () {
-//                 Navigator.push(
-//                   context,
-//                   MaterialPageRoute(builder: (_) => TrackOrderScreen(orderId: orderId)),
-//                 );
-//               },
-//               icon: const Icon(Icons.local_shipping),
-//               label: const Text('Track Order'),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-
-
-
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -68,7 +25,7 @@ class OrderDetailsScreen extends StatelessWidget {
 
           final data = snapshot.data!.data() as Map<String, dynamic>;
 
-          final items = List<Map<String, dynamic>>.from(data['items'] ?? []);
+          final List items = data['items'] ?? [];
           final total = data['total'] ?? 0;
           final status = data['status'] ?? 'pending';
           final address = data['address'] ?? '';
@@ -104,22 +61,37 @@ class OrderDetailsScreen extends StatelessWidget {
                     itemCount: items.length,
                     itemBuilder: (_, i) {
                       final item = items[i];
+
+                      final imageUrl =
+                          item['imageUrl'] ?? item['image'] ?? '';
+
+                      final qty = item['qty'] ?? 1;
+                      final price = item['price'] ?? 0;
+
                       return Card(
+                        margin: const EdgeInsets.only(bottom: 10),
                         child: ListTile(
-                          leading: item['image'] != null
-                              ? Image.asset(
-                                  item['image'],
-                                  width: 50,
-                                  height: 50,
-                                  fit: BoxFit.cover,
-                                )
-                              : const Icon(Icons.fastfood),
+                          leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: imageUrl.toString().startsWith("http")
+                                ? Image.network(
+                                    imageUrl,
+                                    width: 55,
+                                    height: 55,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) =>
+                                        const Icon(Icons.image_not_supported),
+                                  )
+                                : const Icon(Icons.fastfood, size: 40),
+                          ),
                           title: Text(item['name'] ?? ''),
-                          subtitle: Text(
-                              "Qty: ${item['qty']}  •  Ksh ${item['price']}"),
+                          subtitle: Text("Qty: $qty  •  Ksh $price"),
                           trailing: Text(
-                            "Ksh ${item['price'] * item['qty']}",
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            "Ksh ${price * qty}",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                         ),
                       );

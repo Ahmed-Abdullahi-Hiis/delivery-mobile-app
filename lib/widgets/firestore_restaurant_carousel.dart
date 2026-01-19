@@ -1,10 +1,13 @@
-import 'dart:async';
+ import 'dart:async';
 import 'package:flutter/material.dart';
 
 class FirestoreRestaurantCarousel extends StatefulWidget {
   final List<Map<String, dynamic>> restaurants;
 
-  const FirestoreRestaurantCarousel({super.key, required this.restaurants});
+  const FirestoreRestaurantCarousel({
+    super.key,
+    required this.restaurants,
+  });
 
   @override
   State<FirestoreRestaurantCarousel> createState() =>
