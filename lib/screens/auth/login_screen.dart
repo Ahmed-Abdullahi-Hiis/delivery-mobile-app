@@ -1,5 +1,6 @@
 
 
+
 // import 'package:flutter/material.dart';
 // import 'package:provider/provider.dart';
 // import 'package:iconly/iconly.dart';
@@ -36,6 +37,7 @@
 //     super.dispose();
 //   }
 
+//   /// 🔐 EMAIL LOGIN
 //   Future<void> _login() async {
 //     final isValid = _formKey.currentState!.validate();
 //     FocusScope.of(context).unfocus();
@@ -45,19 +47,16 @@
 //     setState(() => _loading = true);
 
 //     try {
-//       // 1️⃣ Login
 //       await AuthService().login(
 //         _email.text.trim(),
 //         _pass.text.trim(),
 //       );
 
-//       // 2️⃣ Reload user + role
 //       final auth = context.read<MyAuthProvider>();
 //       await auth.reloadUser();
 
 //       if (!mounted) return;
 
-//       // 3️⃣ Navigate by role
 //       if (auth.isAdmin) {
 //         Navigator.pushReplacementNamed(context, AdminDashboard.route);
 //       } else {
@@ -66,6 +65,32 @@
 //     } catch (e) {
 //       ScaffoldMessenger.of(context).showSnackBar(
 //         SnackBar(content: Text("Login failed: $e")),
+//       );
+//     } finally {
+//       if (mounted) setState(() => _loading = false);
+//     }
+//   }
+
+//   /// 🔵 GOOGLE LOGIN
+//   Future<void> _loginWithGoogle() async {
+//     try {
+//       setState(() => _loading = true);
+
+//       await AuthService().signInWithGoogle();
+
+//       final auth = context.read<MyAuthProvider>();
+//       await auth.reloadUser();
+
+//       if (!mounted) return;
+
+//       if (auth.isAdmin) {
+//         Navigator.pushReplacementNamed(context, AdminDashboard.route);
+//       } else {
+//         Navigator.pushReplacementNamed(context, RootScreen.route);
+//       }
+//     } catch (e) {
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         SnackBar(content: Text("Google sign-in failed: $e")),
 //       );
 //     } finally {
 //       if (mounted) setState(() => _loading = false);
@@ -146,6 +171,7 @@
 
 //                       const SizedBox(height: 16),
 
+//                       // EMAIL LOGIN
 //                       SizedBox(
 //                         width: double.infinity,
 //                         height: 48,
@@ -153,6 +179,23 @@
 //                           icon: const Icon(Icons.login),
 //                           label: const Text("Login"),
 //                           onPressed: _loading ? null : _login,
+//                         ),
+//                       ),
+
+//                       const SizedBox(height: 16),
+
+//                       // GOOGLE LOGIN
+//                       SizedBox(
+//                         width: double.infinity,
+//                         height: 48,
+//                         child: ElevatedButton.icon(
+//                           style: ElevatedButton.styleFrom(
+//                             backgroundColor: Colors.white,
+//                             foregroundColor: Colors.black,
+//                           ),
+//                           icon: Image.asset("assets/images/google.png", height: 24),
+//                           label: const Text("Sign in with Google"),
+//                           onPressed: _loading ? null : _loginWithGoogle,
 //                         ),
 //                       ),
 
@@ -238,7 +281,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController();
   final _pass = TextEditingController();
-
   final _formKey = GlobalKey<FormState>();
 
   bool _loading = false;
@@ -251,12 +293,12 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  /// 🔐 EMAIL LOGIN
+  // ===============================
+  // 🔐 EMAIL LOGIN
+  // ===============================
   Future<void> _login() async {
-    final isValid = _formKey.currentState!.validate();
+    if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
-
-    if (!isValid) return;
 
     setState(() => _loading = true);
 
@@ -266,49 +308,54 @@ class _LoginScreenState extends State<LoginScreen> {
         _pass.text.trim(),
       );
 
-      final auth = context.read<MyAuthProvider>();
-      await auth.reloadUser();
-
-      if (!mounted) return;
-
-      if (auth.isAdmin) {
-        Navigator.pushReplacementNamed(context, AdminDashboard.route);
-      } else {
-        Navigator.pushReplacementNamed(context, RootScreen.route);
-      }
+      await _handlePostLogin();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Login failed: $e")),
-      );
+      _showError("Login failed: $e");
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  /// 🔵 GOOGLE LOGIN
+  // ===============================
+  // 🔵 GOOGLE LOGIN
+  // ===============================
   Future<void> _loginWithGoogle() async {
+    setState(() => _loading = true);
+
     try {
-      setState(() => _loading = true);
-
       await AuthService().signInWithGoogle();
-
-      final auth = context.read<MyAuthProvider>();
-      await auth.reloadUser();
-
-      if (!mounted) return;
-
-      if (auth.isAdmin) {
-        Navigator.pushReplacementNamed(context, AdminDashboard.route);
-      } else {
-        Navigator.pushReplacementNamed(context, RootScreen.route);
-      }
+      await _handlePostLogin();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Google sign-in failed: $e")),
-      );
+      _showError("Google sign-in failed: $e");
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  // ===============================
+  // 🧠 COMMON POST-LOGIN LOGIC
+  // ===============================
+  Future<void> _handlePostLogin() async {
+    final auth = context.read<MyAuthProvider>();
+    await auth.reloadUser();
+
+    if (!mounted) return;
+
+    if (auth.isAdmin) {
+      Navigator.pushReplacementNamed(context, AdminDashboard.route);
+    } else {
+      Navigator.pushReplacementNamed(context, RootScreen.route);
+    }
+  }
+
+  // ===============================
+  // ❌ ERROR SNACKBAR
+  // ===============================
+  void _showError(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg)),
+    );
   }
 
   @override
@@ -329,11 +376,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       const Text(
                         "Welcome Back 👋",
-                        style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
 
                       const SizedBox(height: 24),
 
+                      // ================= EMAIL =================
                       TextFormField(
                         controller: _email,
                         keyboardType: TextInputType.emailAddress,
@@ -348,6 +399,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       const SizedBox(height: 16),
 
+                      // ================= PASSWORD =================
                       TextFormField(
                         controller: _pass,
                         obscureText: _obscure,
@@ -356,8 +408,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           prefixIcon: const Icon(IconlyLight.lock),
                           border: const OutlineInputBorder(),
                           suffixIcon: IconButton(
-                            icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
-                            onPressed: () => setState(() => _obscure = !_obscure),
+                            icon: Icon(
+                              _obscure ? Icons.visibility : Icons.visibility_off,
+                            ),
+                            onPressed: () {
+                              setState(() => _obscure = !_obscure);
+                            },
                           ),
                         ),
                         validator: (v) =>
@@ -365,15 +421,18 @@ class _LoginScreenState extends State<LoginScreen> {
                         onFieldSubmitted: (_) => _login(),
                       ),
 
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
 
+                      // ================= FORGOT =================
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                              MaterialPageRoute(
+                                builder: (_) => const ForgotPasswordScreen(),
+                              ),
                             );
                           },
                           child: const Text(
@@ -383,9 +442,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
 
-                      // EMAIL LOGIN
+                      // ================= EMAIL LOGIN BUTTON =================
                       SizedBox(
                         width: double.infinity,
                         height: 48,
@@ -398,7 +457,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       const SizedBox(height: 16),
 
-                      // GOOGLE LOGIN
+                      // ================= GOOGLE LOGIN BUTTON =================
                       SizedBox(
                         width: double.infinity,
                         height: 48,
@@ -407,7 +466,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             backgroundColor: Colors.white,
                             foregroundColor: Colors.black,
                           ),
-                          icon: Image.asset("assets/images/google.png", height: 24),
+                          icon: Image.asset(
+                            "assets/images/google.png",
+                            height: 24,
+                          ),
                           label: const Text("Sign in with Google"),
                           onPressed: _loading ? null : _loginWithGoogle,
                         ),
@@ -415,6 +477,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       const SizedBox(height: 16),
 
+                      // ================= REGISTER =================
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -423,24 +486,31 @@ class _LoginScreenState extends State<LoginScreen> {
                             onPressed: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                                MaterialPageRoute(
+                                  builder: (_) => const RegisterScreen(),
+                                ),
                               );
                             },
                             child: const Text(
                               "Create one",
-                              style: TextStyle(decoration: TextDecoration.underline),
+                              style: TextStyle(
+                                decoration: TextDecoration.underline,
+                              ),
                             ),
                           ),
                         ],
                       ),
 
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
 
+                      // ================= GUEST =================
                       TextButton(
                         onPressed: () {
                           Navigator.pushReplacement(
                             context,
-                            MaterialPageRoute(builder: (_) => const HomeScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const HomeScreen(),
+                            ),
                           );
                         },
                         child: const Text("Continue as Guest"),
@@ -451,11 +521,13 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
 
-            // 🔄 LOADING OVERLAY
+            // ================= LOADING OVERLAY =================
             if (_loading)
               Container(
                 color: Colors.black26,
-                child: const Center(child: CircularProgressIndicator()),
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
               ),
           ],
         ),
