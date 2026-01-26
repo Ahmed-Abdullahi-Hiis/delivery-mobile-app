@@ -88,10 +88,10 @@ app.post("/initiate-stk-push", async (req, res) => {
 
     res.json(response.data);
   } catch (err) {
-    console.error("STK ERROR:", err.response?.data || err.message);
+    console.error("STK ERROR:", err.response ? err.response.data : err.message);
     res.status(500).json({
       error: "STK push failed",
-      details: err.response?.data || err.message,
+      details: err.response ? err.response.data : err.message,
     });
   }
 });

@@ -1,170 +1,7 @@
-
-
-
-
-
-
-// import 'package:flutter/material.dart';
-// import 'package:provider/provider.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart';
-
-// import '../../providers/cart_provider.dart';
-// import '../../providers/MyAuthProvider.dart';
-
-// class CheckoutScreen extends StatefulWidget {
-//   final double totalAmount;
-//   final List<String> productNames;
-
-//   const CheckoutScreen({
-//     super.key,
-//     required this.totalAmount,
-//     required this.productNames,
-//   });
-
-//   @override
-//   State<CheckoutScreen> createState() => _CheckoutScreenState();
-// }
-
-// class _CheckoutScreenState extends State<CheckoutScreen> {
-//   final TextEditingController _addressController = TextEditingController();
-//   final TextEditingController _phoneController = TextEditingController();
-//   bool _loading = false;
-
-//   @override
-//   void dispose() {
-//     _addressController.dispose();
-//     _phoneController.dispose();
-//     super.dispose();
-//   }
-
-//   Future<void> _placeOrder() async {
-//     final address = _addressController.text.trim();
-//     final phone = _phoneController.text.replaceAll(RegExp(r'\D'), '');
-
-//     if (address.isEmpty || phone.isEmpty) {
-//       _showError('Please fill all fields');
-//       return;
-//     }
-
-//     if (!RegExp(r'^254\d{9}$').hasMatch(phone)) {
-//       _showError('Phone must start with 254 and have 12 digits');
-//       return;
-//     }
-
-//     final cart = context.read<CartProvider>();
-//     final auth = context.read<MyAuthProvider>();
-
-//     if (cart.items.isEmpty) {
-//       _showError("Cart is empty");
-//       return;
-//     }
-
-//     setState(() => _loading = true);
-
-//     try {
-//       await FirebaseFirestore.instance.collection('orders').add({
-//         'userId': auth.user?.uid,
-//         'userEmail': auth.user?.email,
-//         'address': address,
-//         'phone': phone,
-//         'items': cart.items.values.map((e) => {
-//           'id': e.food.id,
-//           'name': e.food.name,
-//           'price': e.food.price,
-//           'qty': e.quantity,
-//           'image': e.food.image,
-//         }).toList(),
-//         'total': cart.totalPrice,
-//         'status': 'pending',
-//         'paymentMethod': 'cash',
-//         'paid': false,
-//         'createdAt': FieldValue.serverTimestamp(),
-//       });
-
-//       cart.clearCart();
-
-//       if (!mounted) return;
-
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         const SnackBar(content: Text("Order placed successfully ✅")),
-//       );
-
-//       Navigator.popUntil(context, (r) => r.isFirst);
-//     } catch (e) {
-//       _showError("Failed to place order: $e");
-//     } finally {
-//       if (mounted) setState(() => _loading = false);
-//     }
-//   }
-
-//   void _showError(String message) {
-//     ScaffoldMessenger.of(context).showSnackBar(
-//       SnackBar(
-//         content: Text(message),
-//         backgroundColor: Colors.red,
-//       ),
-//     );
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(title: const Text('Checkout')),
-//       body: Padding(
-//         padding: const EdgeInsets.all(16),
-//         child: Column(
-//           children: [
-//             TextField(
-//               controller: _addressController,
-//               decoration: const InputDecoration(
-//                 labelText: 'Address',
-//                 border: OutlineInputBorder(),
-//               ),
-//             ),
-//             const SizedBox(height: 12),
-//             TextField(
-//               controller: _phoneController,
-//               keyboardType: TextInputType.phone,
-//               decoration: const InputDecoration(
-//                 labelText: 'Phone',
-//                 hintText: 'e.g. 254712345678',
-//                 border: OutlineInputBorder(),
-//               ),
-//             ),
-//             const Spacer(),
-//             SizedBox(
-//               width: double.infinity,
-//               height: 50,
-//               child: ElevatedButton(
-//                 onPressed: _loading ? null : _placeOrder,
-//                 child: _loading
-//                     ? const CircularProgressIndicator(color: Colors.white)
-//                     : const Text(
-//                         'Place Order (Pay on Delivery)',
-//                         style: TextStyle(fontSize: 18),
-//                       ),
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-
-
-
-
-
-
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../../providers/cart_provider.dart';
-import '../../providers/MyAuthProvider.dart';
+import 'payment_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final double totalAmount;
@@ -179,9 +16,8 @@ class CheckoutScreen extends StatefulWidget {
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
-  final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  bool _loading = false;
+  final _addressController = TextEditingController();
+  final _phoneController = TextEditingController();
 
   @override
   void dispose() {
@@ -190,73 +26,75 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     super.dispose();
   }
 
-  Future<void> _placeOrder() async {
+  bool _validateInputs() {
     final address = _addressController.text.trim();
-    final phone = _phoneController.text.replaceAll(RegExp(r'\D'), '');
+    final phone = _phoneController.text.trim();
 
-    if (address.isEmpty || phone.isEmpty) {
-      _showError('Please fill all fields');
-      return;
+    if (address.isEmpty) {
+      _showError('Please enter delivery address');
+      return false;
     }
 
-    if (!RegExp(r'^254\d{9}$').hasMatch(phone)) {
-      _showError('Phone must start with 254 and have 12 digits');
-      return;
+    if (phone.isEmpty) {
+      _showError('Please enter phone number');
+      return false;
     }
+
+    // Basic phone validation for Kenyan numbers
+    String normalized = phone.replaceAll(RegExp(r'\D'), '');
+    
+    if (normalized.length < 9) {
+      _showError('Phone number too short');
+      return false;
+    }
+
+    if (normalized.length > 12) {
+      _showError('Phone number too long');
+      return false;
+    }
+
+    return true;
+  }
+
+  void _proceedToPayment() {
+    if (!_validateInputs()) return;
 
     final cart = context.read<CartProvider>();
-    final auth = context.read<MyAuthProvider>();
-
+    
     if (cart.items.isEmpty) {
-      _showError("Cart is empty");
+      _showError('Your cart is empty');
       return;
     }
 
-    setState(() => _loading = true);
+    final address = _addressController.text.trim();
+    final phone = _phoneController.text.trim();
+    // Convert CartItem objects to maps with all necessary fields
+    final items = cart.items.values.map((item) => {
+      'id': item.id,
+      'name': item.name,
+      'price': item.price,
+      'imageUrl': item.imageUrl,
+      'qty': item.quantity,
+    }).toList();
 
-    try {
-      await FirebaseFirestore.instance.collection('orders').add({
-        'userId': auth.user?.uid,
-        'userEmail': auth.user?.email,
-        'address': address,
-        'phone': phone,
-
-        // ✅ FIXED ITEMS STRUCTURE
-        'items': cart.items.values.map((e) => {
-              'id': e.id,
-              'name': e.name,
-              'price': e.price,
-              'qty': e.quantity,
-              'image': e.imageUrl,
-            }).toList(),
-
-        'total': cart.totalPrice,
-        'status': 'pending',
-        'paymentMethod': 'cash',
-        'paid': false,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      cart.clearCart();
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Order placed successfully ✅")),
-      );
-
-      Navigator.popUntil(context, (r) => r.isFirst);
-    } catch (e) {
-      _showError("Failed to place order: $e");
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
+    // Navigate to payment screen - DO NOT show success here
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PaymentScreen(
+          address: address,
+          phone: phone,
+          totalAmount: widget.totalAmount,
+          productNames: items,
+        ),
+      ),
+    );
   }
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text('❌ $message'),
         backgroundColor: Colors.red,
       ),
     );
@@ -264,83 +102,115 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final cart = context.watch<CartProvider>();
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Checkout')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // ================= SUMMARY =================
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  Row(
+      appBar: AppBar(
+        title: const Text('Delivery Details'),
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Order Summary
+              Card(
+                color: Colors.blue[50],
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text("Items:"),
-                      const Spacer(),
-                      Text(cart.totalItems.toString()),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      const Text("Total:"),
-                      const Spacer(),
-                      Text("KES ${cart.totalPrice.toStringAsFixed(0)}"),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // ================= ADDRESS =================
-            TextField(
-              controller: _addressController,
-              decoration: const InputDecoration(
-                labelText: 'Address',
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // ================= PHONE =================
-            TextField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: 'Phone',
-                hintText: 'e.g. 254712345678',
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const Spacer(),
-
-            // ================= BUTTON =================
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _loading ? null : _placeOrder,
-                child: _loading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'Place Order (Pay on Delivery)',
-                        style: TextStyle(fontSize: 18),
+                      const Text(
+                        'Order Total:',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
+                      Text(
+                        'KES ${widget.totalAmount.toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 24),
+
+              // Delivery Address
+              Text(
+                'Delivery Address',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _addressController,
+                minLines: 3,
+                maxLines: 5,
+                decoration: InputDecoration(
+                  hintText: 'Enter your full delivery address',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  prefixIcon: const Padding(
+                    padding: EdgeInsets.only(top: 12),
+                    child: Icon(Icons.location_on),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Phone Number
+              Text(
+                'Phone Number',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  hintText: 'Enter phone (e.g. 0700000000 or +254700000000)',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  prefixIcon: const Icon(Icons.phone),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  '📱 Accepts: 0700000000, +254700000000, 254700000000',
+                  style: TextStyle(fontSize: 12),
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // Proceed Button
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: _proceedToPayment,
+                  icon: const Icon(Icons.payment),
+                  label: const Text('Proceed to Payment'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

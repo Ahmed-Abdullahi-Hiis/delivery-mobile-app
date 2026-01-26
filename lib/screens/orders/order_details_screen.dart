@@ -60,20 +60,20 @@ class OrderDetailsScreen extends StatelessWidget {
                   child: ListView.builder(
                     itemCount: items.length,
                     itemBuilder: (_, i) {
-                      final item = items[i];
+                      final item = items[i] as Map<String, dynamic>;
 
                       final imageUrl =
-                          item['imageUrl'] ?? item['image'] ?? '';
+                          (item['imageUrl'] ?? item['image'] ?? '').toString();
 
-                      final qty = item['qty'] ?? 1;
-                      final price = item['price'] ?? 0;
+                      final qty = (item['qty'] ?? 1);
+                      final price = (item['price'] ?? 0);
 
                       return Card(
                         margin: const EdgeInsets.only(bottom: 10),
                         child: ListTile(
                           leading: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: imageUrl.toString().startsWith("http")
+                            child: imageUrl.startsWith("http")
                                 ? Image.network(
                                     imageUrl,
                                     width: 55,
@@ -87,7 +87,7 @@ class OrderDetailsScreen extends StatelessWidget {
                           title: Text(item['name'] ?? ''),
                           subtitle: Text("Qty: $qty  •  Ksh $price"),
                           trailing: Text(
-                            "Ksh ${price * qty}",
+                            "Ksh ${(price * qty).toStringAsFixed(0)}",
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
