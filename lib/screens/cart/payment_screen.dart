@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:convert';
 import '../../services/mpesa_service.dart';
+import 'package:http/http.dart' as http;
 
 class PaymentScreen extends StatefulWidget {
   final String address;
@@ -25,6 +27,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
   bool _loading = false;
   String _message = "Ready to pay";
   bool _stkSent = false;
+  String? _orderId;
+  String? _firestoreDocId; // Store Firestore document ID
+  bool _paymentConfirmed = false;
 
   // Validate Kenyan phone number
   bool _isValidKenyanPhone(String phone) {
@@ -45,7 +50,84 @@ class _PaymentScreenState extends State<PaymentScreen> {
     return false;
   }
 
-  // ================= START PAYMENT =================
+  // ================= VERIFY PAYMENT =================
+  Future<void> _verifyPayment() async {
+    if (_paymentConfirmed) return;
+    
+    try {
+      final response = await http.get(
+        Uri.parse('http://localhost:3000/check-payment/${_orderId}/${widget.phone}'),
+      ).timeout(const Duration(seconds: 5));
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        
+        if (data['paid'] == true && mounted) {
+          print('✅ Payment confirmed!');
+          
+          // Update order status to paid
+          if (_orderId != null) {
+            await _updateOrderToPaid(_orderId!);
+          }
+          
+          setState(() {
+            _paymentConfirmed = true;
+            _message = '✅ PAYMENT CONFIRMED!\n\nYour order has been received.\nStatus: Preparing';
+          });
+        }
+      }
+    } catch (e) {
+      print('ℹ️ Payment verification check: $e');
+    }
+  }
+
+  // ================= UPDATE ORDER TO PAID =================
+  Future<void> _updateOrderToPaid(String orderId) async {
+    try {
+      // If we have the Firestore document ID from saving, use it directly
+      if (_firestoreDocId != null) {
+        print('📝 Updating order using Firestore Doc ID: $_firestoreDocId');
+        await FirebaseFirestore.instance
+            .collection('orders')
+            .doc(_firestoreDocId)
+            .update({
+          'paid': true,
+          'status': 'preparing',
+          'paidAt': FieldValue.serverTimestamp(),
+        });
+        
+        print('✅ Order $_firestoreDocId marked as PAID with status PREPARING');
+        return;
+      }
+      
+      // Fallback: Query to find the order by orderId
+      print('🔍 Firestore Doc ID not available, querying by orderId...');
+      final snapshot = await FirebaseFirestore.instance
+          .collection('orders')
+          .where('orderId', isEqualTo: orderId)
+          .limit(1)
+          .get();
+      
+      if (snapshot.docs.isNotEmpty) {
+        final docId = snapshot.docs.first.id;
+        
+        await FirebaseFirestore.instance
+            .collection('orders')
+            .doc(docId)
+            .update({
+          'paid': true,
+          'status': 'preparing',
+          'paidAt': FieldValue.serverTimestamp(),
+        });
+        
+        print('✅ Order $docId marked as PAID with status PREPARING');
+      } else {
+        print('⚠️ Order not found with orderId: $orderId');
+      }
+    } catch (e) {
+      print('❌ Error updating order: $e');
+    }
+  }
   Future<void> _startPayment() async {
     // Validate phone first
     if (!_isValidKenyanPhone(widget.phone)) {
@@ -78,6 +160,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
       if (result['success'] == true) {
         print('✅ STK sent successfully');
         
+        // Store order ID for verification
+        _orderId = orderId;
+        
         // Save the order
         await _saveOrder(orderId);
 
@@ -90,6 +175,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
           _loading = false;
         });
 
+        // Start polling for payment confirmation (every 2 seconds for 60 seconds)
+        _startPaymentVerificationPolling();
+
+
       } else {
         print('❌ Payment failed: ${result['message']}');
         _fail(result['message'] ?? '❌ Payment initiation failed');
@@ -98,6 +187,31 @@ class _PaymentScreenState extends State<PaymentScreen> {
       print('❌ Payment error: $e');
       _fail("❌ Error: ${e.toString()}");
     }
+  }
+
+  // ================= POLLING FOR PAYMENT VERIFICATION =================
+  void _startPaymentVerificationPolling() {
+    print('🔄 Starting payment verification polling...');
+    int attempts = 0;
+    const maxAttempts = 30; // 30 attempts = 60 seconds with 2 second delays
+    
+    // Poll every 2 seconds
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!_paymentConfirmed && mounted && attempts < maxAttempts) {
+        attempts++;
+        print('🔄 Polling attempt $attempts/$maxAttempts');
+        _verifyPayment();
+        
+        if (!_paymentConfirmed) {
+          _startPaymentVerificationPolling();
+        }
+      } else if (attempts >= maxAttempts && !_paymentConfirmed && mounted) {
+        print('⏱️ Payment verification timeout - manual confirmation needed');
+        setState(() {
+          _message = '⏱️ Verification timeout.\n\nIf payment was confirmed on your phone,\nclick below to confirm.';
+        });
+      }
+    });
   }
 
   // ================= SAVE ORDER =================
@@ -109,7 +223,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
 
     try {
-      await FirebaseFirestore.instance.collection('orders').add({
+      final docRef = await FirebaseFirestore.instance.collection('orders').add({
         'orderId': orderId,
         'userId': user.uid,
         'userEmail': user.email,
@@ -123,7 +237,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
+      // Store the Firestore document ID for later updates
+      _firestoreDocId = docRef.id;
       print('✅ Order saved: $orderId');
+      print('📝 Firestore Doc ID: $_firestoreDocId');
     } catch (e) {
       print('❌ Error saving order: $e');
     }

@@ -1,0 +1,118 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- HELPERS ----------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid))
+          .data.role == "admin";
+    }
+
+    // ---------- USERS ----------
+    match /users/{userId} {
+
+      // Read:
+      // - User can read their own doc
+      // - Admin can read all
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+
+      // Create:
+      // - User can create their own profile
+      allow create: if isSignedIn() && request.auth.uid == userId;
+
+      // Update:
+      // - Admin can update anything
+      // - User can update own doc BUT NOT role
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        (
+          request.auth.uid == userId &&
+          request.resource.data.role == resource.data.role
+        )
+      );
+
+      // Delete:
+      // - Only admin
+      allow delete: if isAdmin();
+    }
+
+    // ---------- ORDERS ----------
+    match /orders/{orderId} {
+
+      // Admin can read/update/delete any order
+      allow read, update, delete: if isAdmin();
+
+      // User can read their own orders
+      allow read: if isSignedIn() &&
+        resource.data.userId == request.auth.uid;
+
+      // User can create only their own order
+      allow create: if isSignedIn() &&
+        request.resource.data.userId == request.auth.uid;
+
+      // ✅ CRITICAL FIX: User can update their own order (payment confirmation, status updates)
+      allow update: if isSignedIn() &&
+        resource.data.userId == request.auth.uid;
+    }
+
+    // ---------- SETTINGS ----------
+    match /settings/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ---------- RESTAURANTS ----------
+    match /restaurants/{restaurantId} {
+
+      // Anyone can read restaurants
+      allow read: if true;
+
+      // Only admin can create/update/delete restaurants
+      allow create, update, delete: if isAdmin();
+
+      // ---------- MENU (FOODS) ----------
+      match /menu/{foodId} {
+
+        // Anyone can read foods
+        allow read: if true;
+
+        // Only admin can create/update/delete foods
+        allow create, update, delete: if isAdmin();
+      }
+    }
+
+    // ---------- PAYMENTS ----------
+    match /payments/{paymentId} {
+      
+      // User can read their own payments
+      allow read: if isSignedIn() &&
+        resource.data.userId == request.auth.uid;
+
+      // User can create payment records
+      allow create: if isSignedIn() &&
+        request.resource.data.userId == request.auth.uid;
+
+      // User can update their own payments, admin can update any
+      allow update: if isSignedIn() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+
+      // Only admin can delete payments
+      allow delete: if isAdmin();
+    }
+
+    // ---------- FAVORITES ----------
+    match /favorites/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // ---------- CARTS ----------
+    match /carts/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+  }
+}
