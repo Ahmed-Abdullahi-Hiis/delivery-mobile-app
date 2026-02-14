@@ -119,11 +119,8 @@ app.get("/check-payment/:orderId/:phone", async (req, res) => {
   console.log(`\n🔍 Checking payment status for Order: ${orderId}, Phone: ${phone}`);
   
   try {
-    // For now, return success after 10 seconds to simulate transaction completion
-    // In production, you would query M-Pesa's transaction status API
-    
-    // If we have callback data for this phone, return it
-    if (lastCallbackData && lastCallbackData.phoneNumber == phone) {
+    // Only return success if we actually received a callback for this phone
+    if (lastCallbackData && lastCallbackData.phoneNumber == phone && lastCallbackData.success === true) {
       console.log("✅ Payment found in callback data!");
       res.json({
         success: true,
@@ -135,12 +132,12 @@ app.get("/check-payment/:orderId/:phone", async (req, res) => {
       return;
     }
     
-    // Otherwise, assume success after reasonable time (for testing with instant PIN entry)
-    // In production, call M-Pesa transaction status API
+    // No callback yet - payment still pending
+    console.log("⏳ No payment confirmation yet for this phone");
     res.json({
-      success: true,
-      paid: true,
-      message: "Payment processed",
+      success: false,
+      paid: false,
+      message: "Payment not yet confirmed",
       timestamp: new Date().toISOString()
     });
   } catch (error) {

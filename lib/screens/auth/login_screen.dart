@@ -326,7 +326,8 @@ class _LoginScreenState extends State<LoginScreen> {
       await AuthService().signInWithGoogle();
       await _handlePostLogin();
     } catch (e) {
-      _showError("Google sign-in failed: $e");
+      _showError("Google sign-in failed: ${e.toString()}");
+      print('🔴 Google login error: $e');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
